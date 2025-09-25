@@ -1,0 +1,91 @@
+<!-- Dashboard Principal -->
+<div class="dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Dashboard</h1>
+            <p class="dashboard-subtitle">Visão geral das suas finanças</p>
+        </div>
+
+        <!-- Aviso para selecionar carteira -->
+        <div id="wallet-required-warning" class="wallet-warning" style="display: none;">
+            <div class="wallet-warning-content">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <div>
+                    <h3>Selecione uma carteira</h3>
+                    <p>Para usar o sistema, você precisa criar ou selecionar uma carteira no menu superior.</p>
+                    <button class="btn btn-add" data-open-modal="wallet">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Criar primeira carteira
+                    </button>
+                </div>
+            </div>
+        </div>    <div class="dashboard-grid">
+        <!-- Resumo da carteira ativa -->
+        <section class="dashboard-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Resumo da Carteira</h2>
+                </div>
+                <div id="dashboard-balance-card" class="balance-card"></div>
+            </div>
+        </section>
+
+        <!-- Transações recentes -->
+        <section class="dashboard-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Transações Recentes</h2>
+                    <button class="btn btn-add btn-sm" data-open-modal="transaction" title="Nova Transação">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Nova Transação
+                    </button>
+                </div>
+                <div id="dashboard-transactions-list" class="transactions-list"></div>
+            </div>
+        </section>
+
+        <!-- Metas em destaque -->
+        <section class="dashboard-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Metas em Andamento</h2>
+                    <button class="btn btn-add btn-sm" data-open-modal="goal" title="Nova Meta">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Nova Meta
+                    </button>
+                </div>
+                <div id="dashboard-goals-list" class="goals-list"></div>
+            </div>
+        </section>
+
+        <!-- Estatísticas rápidas -->
+        <section class="dashboard-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Estatísticas</h2>
+                </div>
+                <div class="dashboard-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total de Carteiras</span>
+                        <span class="stat-value" id="stat-wallets">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Categorias Cadastradas</span>
+                        <span class="stat-value" id="stat-categories">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Transações do Mês</span>
+                        <span class="stat-value" id="stat-transactions">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

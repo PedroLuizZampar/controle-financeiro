@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-brand">
+                    <h1 class="navbar-title">Controle Financeiro</h1>
+                </div>
+                
+                <div class="navbar-wallet-selector">
+                    <div class="wallet-selector">
+                        <span class="wallet-selector-label">Carteira ativa:</span>
+                        <select id="wallet-selector" class="wallet-selector-dropdown">
+                            <option value="">Nenhuma carteira selecionada</option>
+                        </select>
+                    </div>
+                </div>
+
+                <ul class="navbar-menu">
+                    <li class="navbar-item">
+                        <button class="navbar-link active" data-page="dashboard">
+                            Dashboard
+                        </button>
+                    </li>
+                    <li class="navbar-item">
+                        <button class="navbar-link" data-page="transactions">
+                            Transações
+                        </button>
+                    </li>
+                    <li class="navbar-item">
+                        <button class="navbar-link" data-page="wallets">
+                            Carteiras
+                        </button>
+                    </li>
+                    <li class="navbar-item">
+                        <button class="navbar-link" data-page="categories">
+                            Categorias
+                        </button>
+                    </li>
+                    <li class="navbar-item">
+                        <button class="navbar-link" data-page="goals">
+                            Metas
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Conteúdo das páginas -->
+        <main class="main-content">
+            <div class="container">
+                <div id="page-content" class="page-content">
+                    <!-- Conteúdo carregado dinamicamente -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Templates -->
+    <template id="balance-template">
+        <div class="balance-title">Saldo Atual</div>
+        <div class="balance-value" data-balance></div>
+        <div class="balance-stats">
+            <div class="balance-stat">
+                <div class="balance-stat-label">Receitas</div>
+                <div class="balance-stat-value" data-income></div>
+            </div>
+            <div class="balance-stat">
+                <div class="balance-stat-label">Despesas</div>
+                <div class="balance-stat-value" data-expense></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="form-template">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="description" class="form-label">Descrição</label>
+                <input type="text" id="description" name="description" class="form-input" placeholder="Ex: Salário, Supermercado..." required>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="form-label">Valor</label>
+                <input type="number" id="amount" name="amount" class="form-input" placeholder="0,00" step="0.01" min="0.01" required>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="type" class="form-label">Tipo</label>
+                <select id="type" name="type" class="form-select" required>
+                    <option value="">Selecione o tipo</option>
+                    <option value="income">Receita</option>
+                    <option value="expense">Despesa</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="date" class="form-label">Data</label>
+                <input type="date" id="date" name="date" class="form-input" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Categorias</label>
+            <div class="category-options" data-category-options></div>
+            <p class="form-helper">As categorias serão filtradas conforme o tipo escolhido.</p>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Adicionar Transação</button>
+        </div>
+    </template>
+
+    <template id="transaction-template">
+        <div class="transaction-item">
+            <div class="transaction-info">
+                <div class="transaction-description" data-description></div>
+                <div class="transaction-date" data-date></div>
+                <div class="transaction-categories" data-transaction-categories></div>
+            </div>
+            <div class="transaction-value" data-value></div>
+            <div class="transaction-actions">
+                <button class="btn btn-icon btn-edit" data-edit-transaction title="Editar transação">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-icon btn-delete" data-remove title="Remover transação">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="wallet-template">
+        <div class="wallet-item" data-wallet>
+            <div class="wallet-item-header">
+                <span class="wallet-name" data-wallet-name></span>
+                <span class="wallet-balance" data-wallet-balance></span>
+            </div>
+            <div class="wallet-item-footer">
+                <span class="wallet-income" data-wallet-income></span>
+                <span class="wallet-expense" data-wallet-expense></span>
+                <div class="transaction-actions">
+                    <button class="btn btn-icon btn-edit" data-edit-wallet title="Editar carteira">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-icon btn-delete" data-delete-wallet title="Excluir carteira">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="wallet-form-template">
+        <div class="form-group">
+            <label for="wallet-name" class="form-label">Nome da carteira</label>
+            <input type="text" id="wallet-name" name="name" class="form-input" placeholder="Ex: Conta corrente, Carteira, Investimentos" required>
+        </div>
+        <div class="form-group">
+            <label for="wallet-description" class="form-label">Descrição</label>
+            <textarea id="wallet-description" name="description" class="form-textarea" rows="3" placeholder="Detalhes opcionais"></textarea>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Salvar Carteira</button>
+        </div>
+    </template>
+
+    <template id="category-template">
+        <div class="category-item" data-category>
+            <span class="category-name" data-category-name></span>
+            <span class="category-type" data-category-type></span>
+            <div class="transaction-actions">
+                <button class="btn btn-icon btn-edit" data-edit-category title="Editar categoria">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-icon btn-delete" data-delete-category title="Excluir categoria">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="category-form-template">
+        <div class="form-group">
+            <label for="category-name" class="form-label">Nome da categoria</label>
+            <input type="text" id="category-name" name="name" class="form-input" placeholder="Ex: Salário, Alimentação" required>
+        </div>
+        <div class="form-group">
+            <label for="category-type" class="form-label">Tipo</label>
+            <select id="category-type" name="type" class="form-select" required>
+                <option value="">Selecione o tipo</option>
+                <option value="income">Receita</option>
+                <option value="expense">Despesa</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Salvar Categoria</button>
+        </div>
+    </template>
+
+    <template id="category-option-template">
+        <label class="category-option">
+            <input type="checkbox" name="categories" value="" data-category-input>
+            <span class="category-option-name" data-category-option-name></span>
+            <span class="category-option-type" data-category-option-type></span>
+        </label>
+    </template>
+
+    <template id="goal-template">
+        <article class="goal-item" data-goal>
+            <header class="goal-header">
+                <div class="goal-header-main">
+                    <h3 class="goal-name" data-goal-name></h3>
+                    <div class="goal-meta">
+                        <span class="goal-type" data-goal-type></span>
+                        <span class="goal-renew" data-goal-renew></span>
+                    </div>
+                </div>
+                <div class="goal-target" data-goal-target-label></div>
+            </header>
+            <div class="goal-progress">
+                <div class="goal-progress-bar">
+                    <div class="goal-progress-bar-fill" data-goal-progress-fill></div>
+                </div>
+                <div class="goal-progress-info">
+                    <span class="goal-progress-amount" data-goal-progress-label></span>
+                    <span class="goal-status" data-goal-status></span>
+                </div>
+            </div>
+            <footer class="goal-footer">
+                <span class="goal-period" data-goal-period></span>
+                <span class="goal-actions">
+                    <button class="btn btn-icon btn-edit" data-edit-goal title="Editar meta">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-icon btn-delete" data-delete-goal title="Excluir meta">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </span>
+            </footer>
+        </article>
+    </template>
+
+    <template id="goal-form-template">
+        <div class="goal-form">
+            <div class="goal-form-summary">
+                <span class="goal-form-label">Carteira selecionada:</span>
+                <strong class="goal-form-wallet" data-goal-wallet-label>—</strong>
+            </div>
+            <div class="form-group">
+                <label for="goal-name" class="form-label">Nome da meta</label>
+                <input type="text" id="goal-name" name="name" class="form-input" placeholder="Ex: Guardar para férias" required>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="goal-type" class="form-label">Tipo</label>
+                    <select id="goal-type" name="type" class="form-select" required>
+                        <option value="income">Receita</option>
+                        <option value="expense">Despesa</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="goal-target" class="form-label">Valor alvo</label>
+                    <input type="number" id="goal-target" name="targetAmount" class="form-input" placeholder="0,00" step="0.01" min="0.01" required>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="goal-start-date" class="form-label">Data inicial</label>
+                    <input type="date" id="goal-start-date" name="startDate" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="goal-interval-days" class="form-label">Renovação (dias)</label>
+                    <input type="number" id="goal-interval-days" name="intervalDays" class="form-input" min="1" step="1" required>
+                </div>
+            </div>
+            <p class="form-helper">A meta será renovada automaticamente após o período informado.</p>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Salvar Meta</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="empty-state-template">
+        <div class="empty-state">
+            <div class="empty-state-icon">💰</div>
+            <div class="empty-state-title">Nenhuma transação encontrada</div>
+            <div class="empty-state-description">Use o botão "Nova Transação" para registrar uma nova entrada</div>
+        </div>
+    </template>
+
+    <template id="modal-template">
+        <div class="modal" data-modal>
+            <div class="modal-backdrop" data-modal-close></div>
+            <div class="modal-dialog" role="dialog" aria-modal="true">
+                <div class="modal-header">
+                    <h2 class="modal-title" data-modal-title></h2>
+                    <button class="modal-close" type="button" data-modal-close aria-label="Fechar modal">×</button>
+                </div>
+                <div class="modal-content" data-modal-content></div>
+            </div>
+        </div>
+    </template>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!-- Tela de Transações -->
+<div class="transactions-page">
+    <div class="page-header">
+        <h1 class="page-title">Transações</h1>
+        <p class="page-subtitle">Gerencie suas receitas e despesas</p>
+    </div>
+
+    <section class="balance-section">
+        <div class="balance-card" id="balance-card"></div>
+    </section>
+
+    <section class="transactions-section">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Lista de Transações</h2>
+                <button class="btn btn-add btn-sm" data-open-modal="transaction" title="Nova Transação">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nova Transação
+                </button>
+            </div>
+            <div id="transactions-list" class="transactions-list"></div>
+        </div>
+    </section>
+</div>
