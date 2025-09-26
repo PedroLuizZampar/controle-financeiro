@@ -4,16 +4,31 @@ function validateWalletPayload(payload) {
   const errors = [];
   const name = typeof payload?.name === 'string' ? payload.name.trim() : '';
   const description = typeof payload?.description === 'string' ? payload.description.trim() : null;
+  const icon = typeof payload?.icon === 'string' ? payload.icon.trim() : '';
+  const color = typeof payload?.color === 'string' ? payload.color.trim() : '';
 
   if (!name) {
     errors.push('Nome da carteira é obrigatório.');
+  }
+
+  const defaultIcon = 'fa-solid fa-wallet';
+  const colorPattern = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+  if (!icon) {
+    errors.push('Selecione um ícone para a carteira.');
+  }
+
+  if (!colorPattern.test(color)) {
+    errors.push('Informe uma cor em hexadecimal válida para a carteira.');
   }
 
   return {
     errors,
     parsed: {
       name,
-      description: description || null
+      description: description || null,
+      icon: icon || defaultIcon,
+      color: colorPattern.test(color) ? color : '#22c55e'
     }
   };
 }

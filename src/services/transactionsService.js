@@ -14,7 +14,9 @@ const transactionSelectBase = `
              json_build_object(
                'id', c.id,
                'name', c.name,
-               'type', c.type
+               'type', c.type,
+               'icon', c.icon,
+               'color', c.color
              )
              ORDER BY c.name
            ) FILTER (WHERE c.id IS NOT NULL),
@@ -30,7 +32,9 @@ function mapTransaction(row) {
     ? row.categories.map((category) => ({
         id: Number(category.id),
         name: category.name,
-        type: category.type
+        type: category.type,
+        icon: category.icon,
+        color: category.color
       }))
     : [];
 

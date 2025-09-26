@@ -2,6 +2,7 @@ import { ModalManager } from './modals.js';
 import { NavigationManager } from './navigation.js';
 import { WalletSelectorManager } from './wallet-selector.js';
 import { DashboardManager } from './dashboard.js';
+import { IconPicker } from './icons.js';
 import {
     fetchTransactions,
     createTransaction,
@@ -21,6 +22,42 @@ import {
     deleteGoal
 } from './api.js';
 
+const DEFAULT_VISUALS = {
+    wallet: { icon: 'fa-solid fa-wallet', color: '#22c55e' },
+    category: { icon: 'fa-solid fa-tag', color: '#6366f1' },
+    goal: { icon: 'fa-solid fa-bullseye', color: '#f97316' }
+};
+
+const HEX_PATTERN = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+function normalizeHexColor(hex, fallback = '#000000') {
+    if (typeof hex !== 'string') {
+        return fallback;
+    }
+    const value = hex.trim();
+    return HEX_PATTERN.test(value) ? value : fallback;
+}
+
+function getContrastColor(hex) {
+    const normalized = normalizeHexColor(hex, '#ffffff');
+    // Suporta formato #RRGGBB ou #RRGGBBAA (ignorando alfa)
+    const base = normalized.length >= 7 ? normalized.slice(0, 7) : normalized;
+    const r = parseInt(base.slice(1, 3), 16) / 255;
+    const g = parseInt(base.slice(3, 5), 16) / 255;
+    const b = parseInt(base.slice(5, 7), 16) / 255;
+
+    const srgb = [r, g, b].map((value) => (value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4)));
+    const luminance = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+    return luminance > 0.6 ? '#0f172a' : '#f8fafc';
+}
+
+function normalizeVisual(visual = {}, fallback) {
+    return {
+        icon: visual.icon || fallback.icon,
+        color: normalizeHexColor(visual.color, fallback.color)
+    };
+}
+
 class TemplateManager {
     constructor() {
         this.templates = {
@@ -36,6 +73,26 @@ class TemplateManager {
             goal: document.getElementById('goal-template'),
             goalForm: document.getElementById('goal-form-template')
         };
+    }
+
+    updateVisualChip(element, { icon, color }, fallbackKey) {
+        if (!element) {
+            return;
+        }
+
+        const defaults = DEFAULT_VISUALS[fallbackKey] ?? { icon: 'fa-solid fa-circle', color: '#cbd5f5' };
+        const safeColor = normalizeHexColor(color, defaults.color);
+        element.style.background = safeColor;
+        element.style.color = getContrastColor(safeColor);
+
+        const iconElement = element.querySelector('i');
+        const finalIcon = icon || defaults.icon;
+        if (iconElement) {
+            iconElement.className = finalIcon;
+            iconElement.setAttribute('aria-hidden', 'true');
+        } else {
+            element.innerHTML = `<i class="${finalIcon}" aria-hidden="true"></i>`;
+        }
     }
 
     renderBalance(container, { balance, totalIncome, totalExpense }) {
@@ -82,8 +139,13 @@ class TemplateManager {
                     categoriesContainer.innerHTML = '';
                     transaction.categories.forEach((category) => {
                         const badge = document.createElement('span');
-                        badge.className = `transaction-category-badge transaction-category-badge--${category.type}`;
-                        badge.textContent = category.name;
+                        badge.className = 'transaction-category-badge';
+                        const fallbackColor = category.type === 'income' ? DEFAULT_VISUALS.wallet.color : '#ef4444';
+                        const safeColor = normalizeHexColor(category.color, fallbackColor);
+                        badge.style.background = safeColor;
+                        badge.style.color = getContrastColor(safeColor);
+                        const iconClass = category.icon || DEFAULT_VISUALS.category.icon;
+                        badge.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span>${category.name}</span>`;
                         categoriesContainer.appendChild(badge);
                     });
                 }
@@ -122,6 +184,20 @@ class TemplateManager {
 
             fragment.querySelector('[data-wallet-name]').textContent = wallet.name;
             fragment.querySelector('[data-wallet-balance]').textContent = this.formatCurrency(wallet.balance);
+
+            const descriptionElement = fragment.querySelector('[data-wallet-description]');
+            if (descriptionElement) {
+                if (wallet.description) {
+                    descriptionElement.textContent = wallet.description;
+                    descriptionElement.hidden = false;
+                } else {
+                    descriptionElement.textContent = '';
+                    descriptionElement.hidden = true;
+                }
+            }
+
+            const visualElement = fragment.querySelector('[data-wallet-visual]');
+            this.updateVisualChip(visualElement, { icon: wallet.icon, color: wallet.color }, 'wallet');
 
             const incomeElement = fragment.querySelector('[data-wallet-income]');
             const expenseElement = fragment.querySelector('[data-wallet-expense]');
@@ -183,7 +259,9 @@ class TemplateManager {
                 categoryElement.classList.add(`category-item--${category.type}`);
 
                 fragment.querySelector('[data-category-name]').textContent = category.name;
-                fragment.querySelector('[data-category-type]').textContent = type === 'income' ? 'Receita' : 'Despesa';
+
+                const visualElement = fragment.querySelector('[data-category-visual]');
+                this.updateVisualChip(visualElement, { icon: category.icon, color: category.color }, 'category');
 
                 list.appendChild(fragment);
             });
@@ -212,6 +290,9 @@ class TemplateManager {
                 goalElement.dataset.goalId = goal.id;
                 goalElement.classList.add(`goal-item--${goal.type}`);
             }
+
+            const visualElement = fragment.querySelector('[data-goal-visual]');
+            this.updateVisualChip(visualElement, { icon: goal.icon, color: goal.color }, 'goal');
 
             const nameElement = fragment.querySelector('[data-goal-name]');
             if (nameElement) {
@@ -270,6 +351,12 @@ class TemplateManager {
         form.className = 'transaction-form';
 
         form.appendChild(fragment);
+
+        // Botão submit inicia como receita
+        const submitBtn = form.querySelector('[data-transaction-submit]');
+        if (submitBtn) {
+            submitBtn.classList.add('btn-income');
+        }
 
         const dateInput = form.querySelector('[name="date"]');
         if (dateInput) {
@@ -362,6 +449,7 @@ class TemplateManager {
             const input = fragment.querySelector('[data-category-input]');
             const nameElement = fragment.querySelector('[data-category-option-name]');
             const typeElement = fragment.querySelector('[data-category-option-type]');
+            const visualElement = fragment.querySelector('[data-category-option-visual]');
 
             input.value = category.id;
             input.checked = selectedIds.includes(category.id);
@@ -371,6 +459,8 @@ class TemplateManager {
                 typeElement.textContent = category.type === 'income' ? 'Receita' : 'Despesa';
                 typeElement.classList.add(`category-option-type--${category.type}`);
             }
+
+            this.updateVisualChip(visualElement, { icon: category.icon, color: category.color }, 'category');
 
             container.appendChild(fragment);
         });
@@ -407,6 +497,7 @@ class FinancialControl {
         this.activeWalletId = null;
         this.templates = new TemplateManager();
         this.modalManager = new ModalManager();
+        this.iconPicker = new IconPicker();
         
         // Gerenciadores do novo sistema de navegação
         this.navigationManager = new NavigationManager();
@@ -417,6 +508,50 @@ class FinancialControl {
         
         // Containers serão obtidos dinamicamente conforme a página atual
         this.init();
+    }
+
+    setupVisualCustomizer(form, defaults) {
+        const preview = form.querySelector('[data-visual-preview]');
+        const iconElement = form.querySelector('[data-visual-icon]');
+        const iconInput = form.querySelector('[data-visual-icon-input]');
+        const colorInput = form.querySelector('[data-visual-color]');
+        const triggerButton = form.querySelector('[data-open-icon-picker]');
+
+        if (!preview || !iconElement || !iconInput || !colorInput || !triggerButton) {
+            return { setVisual: () => {} };
+        }
+
+        const applyVisual = ({ icon, color } = {}) => {
+            const finalIcon = icon || defaults.icon;
+            const finalColor = normalizeHexColor(color, defaults.color);
+            preview.style.background = finalColor;
+            preview.style.color = getContrastColor(finalColor);
+            iconElement.className = finalIcon;
+            iconElement.setAttribute('aria-hidden', 'true');
+            iconInput.value = finalIcon;
+            colorInput.value = finalColor;
+        };
+
+        colorInput.addEventListener('input', () => {
+            applyVisual({ icon: iconInput.value, color: colorInput.value });
+        });
+
+        triggerButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.iconPicker.open({
+                selected: iconInput.value || defaults.icon,
+                onSelect: (iconValue) => applyVisual({ icon: iconValue, color: colorInput.value })
+            });
+        });
+
+        return {
+            setVisual: (visual = defaults) => applyVisual(visual)
+        };
+    }
+
+    closeModals() {
+        this.iconPicker.close();
+        this.modalManager.close();
     }
 
     async init() {
@@ -465,30 +600,38 @@ class FinancialControl {
                 ? transaction.categories.map((category) => ({
                       id: Number(category.id),
                       name: category.name,
-                      type: category.type
+                      type: category.type,
+                      ...normalizeVisual(category, DEFAULT_VISUALS.category)
                   }))
                 : []
         };
     }
 
     normalizeWallet(wallet) {
+        const visual = normalizeVisual(wallet, DEFAULT_VISUALS.wallet);
         return {
             ...wallet,
             id: Number(wallet.id),
             totalIncome: Number(wallet.totalIncome),
             totalExpense: Number(wallet.totalExpense),
-            balance: Number(wallet.balance)
+            balance: Number(wallet.balance),
+            icon: visual.icon,
+            color: visual.color
         };
     }
 
     normalizeCategory(category) {
+        const visual = normalizeVisual(category, DEFAULT_VISUALS.category);
         return {
             ...category,
-            id: Number(category.id)
+            id: Number(category.id),
+            icon: visual.icon,
+            color: visual.color
         };
     }
 
     normalizeGoal(goal) {
+        const visual = normalizeVisual(goal, DEFAULT_VISUALS.goal);
         return {
             ...goal,
             id: Number(goal.id),
@@ -501,7 +644,9 @@ class FinancialControl {
             status: goal.status ?? 'in_progress',
             currentPeriodStart: goal.currentPeriodStart,
             currentPeriodEnd: goal.currentPeriodEnd,
-            type: goal.type
+            type: goal.type,
+            icon: visual.icon,
+            color: visual.color
         };
     }
 
@@ -710,11 +855,13 @@ class FinancialControl {
                 return;
             }
 
-            const removeButton = event.target.closest('.btn-remove');
+            // Botão de remoção de transação (usava classe .btn-remove, mas o template fornece apenas data-remove)
+            const removeButton = event.target.closest('[data-remove]');
             if (removeButton) {
                 event.preventDefault();
                 const transactionId = Number(removeButton.dataset.id);
                 await this.handleDeleteTransaction(transactionId);
+                return; // Evita processamento adicional no mesmo clique
             }
 
             const editCategoryBtn = event.target.closest('[data-edit-category]');
@@ -782,7 +929,8 @@ class FinancialControl {
         const form = this.templates.createTransactionForm();
         this.modalManager.open({
             title: 'Nova Transação',
-            content: form
+            content: form,
+            onClose: () => this.iconPicker.close()
         });
         this.setupTransactionFormInteractions(form);
     }
@@ -798,9 +946,15 @@ class FinancialControl {
         }
         form.querySelector('[name="description"]').value = transaction.description;
         form.querySelector('[name="amount"]').value = String(transaction.amount);
-        form.querySelector('[name="type"]').value = transaction.type;
+        // Hidden input já está presente; será atualizado após setupTransactionFormInteractions
+        const hiddenType = form.querySelector('input[name="type"]');
+        if (hiddenType) hiddenType.value = transaction.type;
         form.querySelector('[name="date"]').value = transaction.date;
-        this.modalManager.open({ title: 'Editar Transação', content: form });
+        this.modalManager.open({
+            title: 'Editar Transação',
+            content: form,
+            onClose: () => this.iconPicker.close()
+        });
         this.setupTransactionFormInteractions(form);
         const categoriesContainer = form.querySelector('[data-category-options]');
         if (categoriesContainer) {
@@ -811,39 +965,61 @@ class FinancialControl {
     }
 
     openWalletModal() {
+        this.iconPicker.close();
         const form = this.templates.createWalletForm();
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.wallet);
+        setVisual(DEFAULT_VISUALS.wallet);
         this.modalManager.open({
             title: 'Nova Carteira',
-            content: form
+            content: form,
+            onClose: () => this.iconPicker.close()
         });
     }
 
     openWalletModalForEdit(id) {
         const wallet = this.wallets.find((w) => w.id === id);
         if (!wallet) return;
+        this.iconPicker.close();
         const form = this.templates.createWalletForm();
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.wallet);
         this.templates.fillWalletForm(form, wallet);
         form.dataset.mode = 'edit';
         form.dataset.walletId = String(id);
-        this.modalManager.open({ title: 'Editar Carteira', content: form });
+        this.modalManager.open({
+            title: 'Editar Carteira',
+            content: form,
+            onClose: () => this.iconPicker.close()
+        });
+        setVisual({ icon: wallet.icon, color: wallet.color });
     }
 
     openCategoryModal() {
+        this.iconPicker.close();
         const form = this.templates.createCategoryForm();
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.category);
+        setVisual(DEFAULT_VISUALS.category);
         this.modalManager.open({
             title: 'Nova Categoria',
-            content: form
+            content: form,
+            onClose: () => this.iconPicker.close()
         });
     }
 
     openCategoryModalForEdit(id) {
         const category = this.categories.find((c) => c.id === id);
         if (!category) return;
+        this.iconPicker.close();
         const form = this.templates.createCategoryForm();
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.category);
         this.templates.fillCategoryForm(form, category);
         form.dataset.mode = 'edit';
         form.dataset.categoryId = String(id);
-        this.modalManager.open({ title: 'Editar Categoria', content: form });
+        this.modalManager.open({
+            title: 'Editar Categoria',
+            content: form,
+            onClose: () => this.iconPicker.close()
+        });
+        setVisual({ icon: category.icon, color: category.color });
     }
 
     openGoalModal() {
@@ -853,11 +1029,15 @@ class FinancialControl {
         }
 
         const activeWallet = this.wallets.find((wallet) => wallet.id === this.activeWalletId);
+        this.iconPicker.close();
         const form = this.templates.createGoalForm({ walletName: activeWallet?.name ?? '' });
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.goal);
+        setVisual(DEFAULT_VISUALS.goal);
 
         this.modalManager.open({
             title: 'Nova Meta',
-            content: form
+            content: form,
+            onClose: () => this.iconPicker.close()
         });
 
         const nameInput = form.querySelector('[name="name"]');
@@ -868,24 +1048,42 @@ class FinancialControl {
         const goal = this.goals.find((g) => g.id === id);
         if (!goal) return;
         const activeWallet = this.wallets.find((wallet) => wallet.id === this.activeWalletId);
+        this.iconPicker.close();
         const form = this.templates.createGoalForm({ walletName: activeWallet?.name ?? '' });
+        const { setVisual } = this.setupVisualCustomizer(form, DEFAULT_VISUALS.goal);
         this.templates.fillGoalForm(form, goal);
         form.dataset.mode = 'edit';
         form.dataset.goalId = String(id);
-        this.modalManager.open({ title: 'Editar Meta', content: form });
+        this.modalManager.open({
+            title: 'Editar Meta',
+            content: form,
+            onClose: () => this.iconPicker.close()
+        });
+        setVisual({ icon: goal.icon, color: goal.color });
     }
 
     setupTransactionFormInteractions(form) {
-        const typeSelect = form.querySelector('[name="type"]');
+        const hiddenTypeInput = form.querySelector('input[name="type"]');
+        const chooseBar = form.querySelector('[data-transaction-type-choose]');
         const categoriesContainer = form.querySelector('[data-category-options]');
 
-        if (!categoriesContainer) {
-            return;
-        }
+        if (!hiddenTypeInput || !chooseBar || !categoriesContainer) return;
+
+        const setActiveType = (type) => {
+            hiddenTypeInput.value = type;
+            chooseBar.querySelectorAll('[data-type-option]').forEach(btn => {
+                btn.classList.toggle('is-active', btn.dataset.typeOption === type);
+            });
+            renderOptions();
+            const submitBtn = form.querySelector('[data-transaction-submit]');
+            if (submitBtn) {
+                submitBtn.classList.toggle('btn-income', type === 'income');
+                submitBtn.classList.toggle('btn-expense', type === 'expense');
+            }
+        };
 
         const renderOptions = () => {
-            const type = typeSelect?.value;
-
+            const type = hiddenTypeInput.value;
             if (!type || !['income', 'expense'].includes(type)) {
                 categoriesContainer.innerHTML = '';
                 const info = document.createElement('div');
@@ -894,17 +1092,24 @@ class FinancialControl {
                 categoriesContainer.appendChild(info);
                 return;
             }
-
             const selectedIds = Array.from(categoriesContainer.querySelectorAll('input[name="categories"]:checked'))
                 .map((input) => Number(input.value))
                 .filter((value) => Number.isInteger(value) && value > 0);
-
             const categoriesForType = this.getCategoriesByType(type);
             this.templates.renderCategoryOptions(categoriesContainer, categoriesForType, selectedIds);
         };
 
-        typeSelect?.addEventListener('change', renderOptions);
-        renderOptions();
+        chooseBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-type-option]');
+            if (!btn) return;
+            const newType = btn.dataset.typeOption;
+            if (newType && newType !== hiddenTypeInput.value) {
+                setActiveType(newType);
+            }
+        });
+
+        // Estado inicial padrão: income
+        setActiveType(hiddenTypeInput.value || 'income');
     }
 
     async handleFormSubmit(form) {
@@ -993,7 +1198,7 @@ class FinancialControl {
                 console.error('Erro ao atualizar metas após salvar transação:', refreshError);
             }
             this.updateDisplay();
-            this.modalManager.close();
+            this.closeModals();
         } catch (error) {
             console.error('Erro ao criar transação:', error);
             alert(error.message || 'Não foi possível salvar a transação.');
@@ -1054,10 +1259,20 @@ class FinancialControl {
         const name = formData.get('name')?.toString().trim();
         const descriptionRaw = formData.get('description')?.toString().trim();
         const description = descriptionRaw ? descriptionRaw : null;
+        const icon = formData.get('icon')?.toString().trim();
+        const color = formData.get('color')?.toString().trim();
 
         const errors = [];
         if (!name) {
             errors.push('Nome da carteira é obrigatório.');
+        }
+
+        if (!icon) {
+            errors.push('Selecione um ícone para a carteira.');
+        }
+
+        if (!HEX_PATTERN.test(color ?? '')) {
+            errors.push('Informe uma cor hexadecimal válida para a carteira.');
         }
 
         if (errors.length > 0) {
@@ -1069,17 +1284,17 @@ class FinancialControl {
             const isEdit = form.dataset.mode === 'edit';
             if (isEdit) {
                 const id = Number(form.dataset.walletId);
-                const wallet = await updateWallet(id, { name, description });
-                this.modalManager.close();
+                const wallet = await updateWallet(id, { name, description, icon, color: normalizeHexColor(color, DEFAULT_VISUALS.wallet.color) });
+                this.closeModals();
                 await this.loadWallets({ preserveActive: true });
                 if (this.activeWalletId === id) {
                     await this.loadTransactions();
                     await this.loadGoals();
                 }
             } else {
-                const wallet = await createWallet({ name, description });
+                const wallet = await createWallet({ name, description, icon, color: normalizeHexColor(color, DEFAULT_VISUALS.wallet.color) });
                 this.activeWalletId = Number(wallet.id);
-                this.modalManager.close();
+                this.closeModals();
                 await this.loadWallets();
                 await this.loadTransactions();
                 await this.loadGoals();
@@ -1093,6 +1308,10 @@ class FinancialControl {
 
     async handleDeleteWallet(id) {
         if (!Number.isInteger(id) || id <= 0) return;
+        if (this.wallets.length <= 1) {
+            alert('Você não pode excluir a única carteira. Crie outra antes de excluir esta.');
+            return;
+        }
         if (!confirm('Tem certeza que deseja excluir esta carteira? Todas as transações e metas associadas serão removidas.')) {
             return;
         }
@@ -1100,6 +1319,7 @@ class FinancialControl {
             await deleteWallet(id);
             await this.loadWallets({ preserveActive: true });
             if (this.activeWalletId === id) {
+                // Seleciona primeira carteira restante (garantido existir porque impedimos remover a última)
                 this.activeWalletId = this.wallets[0]?.id ?? null;
                 await this.loadTransactions();
                 await this.loadGoals();
@@ -1123,6 +1343,8 @@ class FinancialControl {
         const rawTargetAmount = formData.get('targetAmount');
         const rawStartDate = formData.get('startDate');
         const rawIntervalDays = formData.get('intervalDays');
+        const icon = formData.get('icon')?.toString().trim();
+        const color = formData.get('color')?.toString().trim();
 
         const name = typeof rawName === 'string' ? rawName.trim() : '';
         const type = typeof rawType === 'string' ? rawType.trim() : '';
@@ -1152,6 +1374,14 @@ class FinancialControl {
             errors.push('Informe um intervalo de renovação em dias (inteiro maior que zero).');
         }
 
+        if (!icon) {
+            errors.push('Selecione um ícone para a meta.');
+        }
+
+        if (!HEX_PATTERN.test(color ?? '')) {
+            errors.push('Informe uma cor hexadecimal válida para a meta.');
+        }
+
         if (errors.length > 0) {
             alert(errors.join('\n'));
             return;
@@ -1167,12 +1397,14 @@ class FinancialControl {
                     type,
                     targetAmount,
                     startDate,
-                    intervalDays
+                    intervalDays,
+                    icon,
+                    color: normalizeHexColor(color, DEFAULT_VISUALS.goal.color)
                 });
                 const normalized = this.normalizeGoal(goal);
                 this.goals = this.goals.map((g) => (g.id === id ? normalized : g));
                 this.renderGoals();
-                this.modalManager.close();
+                this.closeModals();
             } else {
                 const goal = await createGoal({
                     walletId: this.activeWalletId,
@@ -1180,13 +1412,15 @@ class FinancialControl {
                     type,
                     targetAmount,
                     startDate,
-                    intervalDays
+                    intervalDays,
+                    icon,
+                    color: normalizeHexColor(color, DEFAULT_VISUALS.goal.color)
                 });
 
                 const normalizedGoal = this.normalizeGoal(goal);
                 this.goals = [normalizedGoal, ...this.goals];
                 this.renderGoals();
-                this.modalManager.close();
+                this.closeModals();
             }
         } catch (error) {
             console.error('Erro ao criar meta:', error);
@@ -1215,6 +1449,8 @@ class FinancialControl {
         const formData = new FormData(form);
         const name = formData.get('name')?.toString().trim();
         const type = formData.get('type')?.toString();
+        const icon = formData.get('icon')?.toString().trim();
+        const color = formData.get('color')?.toString().trim();
 
         const errors = [];
 
@@ -1226,6 +1462,14 @@ class FinancialControl {
             errors.push('Selecione o tipo da categoria.');
         }
 
+        if (!icon) {
+            errors.push('Selecione um ícone para a categoria.');
+        }
+
+        if (!HEX_PATTERN.test(color ?? '')) {
+            errors.push('Informe uma cor hexadecimal válida para a categoria.');
+        }
+
         if (errors.length > 0) {
             alert(errors.join('\n'));
             return;
@@ -1235,11 +1479,11 @@ class FinancialControl {
             const isEdit = form.dataset.mode === 'edit';
             if (isEdit) {
                 const id = Number(form.dataset.categoryId);
-                await updateCategory(id, { name, type });
+                await updateCategory(id, { name, type, icon, color: normalizeHexColor(color, DEFAULT_VISUALS.category.color) });
             } else {
-                await createCategory({ name, type });
+                await createCategory({ name, type, icon, color: normalizeHexColor(color, DEFAULT_VISUALS.category.color) });
             }
-            this.modalManager.close();
+            this.closeModals();
             await this.refreshCategories();
         } catch (error) {
             console.error('Erro ao criar categoria:', error);

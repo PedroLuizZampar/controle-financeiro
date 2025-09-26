@@ -60,6 +60,8 @@ function mapGoalRow(row) {
     targetAmount: Number(row.target_amount),
     startDate: row.start_date instanceof Date ? row.start_date.toISOString().split('T')[0] : row.start_date,
     intervalDays: Number(row.interval_days),
+    icon: row.icon || 'fa-solid fa-bullseye',
+    color: row.color || '#f97316',
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
   };
@@ -147,7 +149,7 @@ async function composeGoalsResponse(goals) {
 
 exports.listGoals = async (walletId) => {
   const result = await pool.query(
-    `SELECT id, wallet_id, name, type, target_amount, start_date, interval_days, created_at, updated_at
+    `SELECT id, wallet_id, name, type, target_amount, start_date, interval_days, icon, color, created_at, updated_at
        FROM goals
       WHERE wallet_id = $1
       ORDER BY created_at DESC, id DESC`,
@@ -160,7 +162,7 @@ exports.listGoals = async (walletId) => {
 
 exports.getGoalById = async (goalId, walletId) => {
   const result = await pool.query(
-    `SELECT id, wallet_id, name, type, target_amount, start_date, interval_days, created_at, updated_at
+    `SELECT id, wallet_id, name, type, target_amount, start_date, interval_days, icon, color, created_at, updated_at
        FROM goals
       WHERE id = $1 AND wallet_id = $2
       LIMIT 1`,
@@ -176,19 +178,19 @@ exports.getGoalById = async (goalId, walletId) => {
   return response;
 };
 
-exports.createGoal = async ({ walletId, name, type, targetAmount, startDate, intervalDays }) => {
+exports.createGoal = async ({ walletId, name, type, targetAmount, startDate, intervalDays, icon, color }) => {
   const result = await pool.query(
-    `INSERT INTO goals (wallet_id, name, type, target_amount, start_date, interval_days)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO goals (wallet_id, name, type, target_amount, start_date, interval_days, icon, color)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
-    [walletId, name, type, targetAmount, startDate, intervalDays]
+    [walletId, name, type, targetAmount, startDate, intervalDays, icon, color]
   );
 
   const goalId = result.rows[0].id;
   return exports.getGoalById(goalId, walletId);
 };
 
-exports.updateGoal = async (id, walletId, { name, type, targetAmount, startDate, intervalDays }) => {
+exports.updateGoal = async (id, walletId, { name, type, targetAmount, startDate, intervalDays, icon, color }) => {
   const result = await pool.query(
     `UPDATE goals
         SET name = $3,
@@ -196,10 +198,12 @@ exports.updateGoal = async (id, walletId, { name, type, targetAmount, startDate,
             target_amount = $5,
             start_date = $6,
             interval_days = $7,
+            icon = $8,
+            color = $9,
             updated_at = NOW()
       WHERE id = $1 AND wallet_id = $2
       RETURNING id` ,
-    [id, walletId, name, type, targetAmount, startDate, intervalDays]
+    [id, walletId, name, type, targetAmount, startDate, intervalDays, icon, color]
   );
 
   if (result.rows.length === 0) {

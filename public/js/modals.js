@@ -2,16 +2,19 @@ export class ModalManager {
     constructor() {
         this.modalTemplate = document.getElementById('modal-template');
         this.activeModal = null;
+        this.onCloseCallback = null;
         this.handleDocumentClick = this.handleDocumentClick.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
     }
 
-    open({ title, content }) {
+    open({ title, content, onClose }) {
         if (!this.modalTemplate) {
             throw new Error('Template de modal não encontrado.');
         }
 
         this.close();
+
+        this.onCloseCallback = typeof onClose === 'function' ? onClose : null;
 
         const fragment = this.modalTemplate.content.cloneNode(true);
         const modal = fragment.querySelector('[data-modal]');
@@ -44,6 +47,13 @@ export class ModalManager {
     close() {
         if (!this.activeModal) {
             document.body.classList.remove('modal-open');
+            if (typeof this.onCloseCallback === 'function') {
+                const callback = this.onCloseCallback;
+                this.onCloseCallback = null;
+                callback();
+            } else {
+                this.onCloseCallback = null;
+            }
             return;
         }
 
@@ -53,6 +63,14 @@ export class ModalManager {
         this.activeModal.remove();
         this.activeModal = null;
         document.body.classList.remove('modal-open');
+
+        if (typeof this.onCloseCallback === 'function') {
+            const callback = this.onCloseCallback;
+            this.onCloseCallback = null;
+            callback();
+        } else {
+            this.onCloseCallback = null;
+        }
     }
 
     handleDocumentClick(event) {

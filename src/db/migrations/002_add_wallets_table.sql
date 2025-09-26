@@ -9,8 +9,8 @@ DO $$
 DECLARE
     default_wallet_id INTEGER;
 BEGIN
-    INSERT INTO wallets (name, description)
-    VALUES ('Carteira Principal', 'Carteira criada automaticamente.')
+    INSERT INTO wallets (name)
+    VALUES ('Carteira Principal')
     ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description
     RETURNING id INTO default_wallet_id;
 

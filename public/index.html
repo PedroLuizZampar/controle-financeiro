@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -17,9 +18,34 @@
                 </div>
                 
                 <div class="navbar-wallet-selector">
-                    <div class="wallet-selector">
+                    <div class="wallet-selector" data-wallet-selector>
                         <span class="wallet-selector-label">Carteira ativa:</span>
-                        <select id="wallet-selector" class="wallet-selector-dropdown">
+                        <button type="button" class="wallet-selector-trigger is-empty" data-wallet-selector-trigger aria-haspopup="listbox" aria-expanded="false">
+                            <span class="visual-chip visual-chip--sm wallet-selector-preview" data-wallet-selector-preview>
+                                <i class="fa-solid fa-wallet" data-wallet-selector-icon aria-hidden="true"></i>
+                            </span>
+                            <span class="wallet-selector-trigger-text">
+                                <span class="wallet-selector-name" data-wallet-selector-name>Nenhuma carteira</span>
+                                <span class="wallet-selector-meta" data-wallet-selector-meta>Clique para adicionar</span>
+                            </span>
+                            <span class="wallet-selector-chevron" aria-hidden="true">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </span>
+                        </button>
+                        <div class="wallet-selector-dropdown-panel" data-wallet-selector-dropdown hidden>
+                            <div class="wallet-selector-dropdown-surface" data-wallet-selector-surface>
+                                <div class="wallet-selector-empty" data-wallet-selector-empty hidden>
+                                    <span class="wallet-selector-empty-title">Nenhuma carteira cadastrada</span>
+                                    <span class="wallet-selector-empty-subtitle">Use o botão abaixo para criar sua primeira carteira.</span>
+                                </div>
+                                <div class="wallet-selector-list" data-wallet-selector-list role="listbox"></div>
+                                <button type="button" class="wallet-selector-create" data-wallet-selector-create data-open-modal="wallet">
+                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    Nova carteira
+                                </button>
+                            </div>
+                        </div>
+                        <select id="wallet-selector" class="wallet-selector-native" aria-hidden="true" tabindex="-1">
                             <option value="">Nenhuma carteira selecionada</option>
                         </select>
                     </div>
@@ -82,6 +108,11 @@
     </template>
 
     <template id="form-template">
+        <div class="transaction-type-choose" data-transaction-type-choose>
+            <button type="button" class="choose-option is-active" data-type-option="income">Receita</button>
+            <button type="button" class="choose-option" data-type-option="expense">Despesa</button>
+            <input type="hidden" name="type" value="income">
+        </div>
         <div class="form-grid">
             <div class="form-group">
                 <label for="description" class="form-label">Descrição</label>
@@ -94,14 +125,6 @@
         </div>
         <div class="form-grid">
             <div class="form-group">
-                <label for="type" class="form-label">Tipo</label>
-                <select id="type" name="type" class="form-select" required>
-                    <option value="">Selecione o tipo</option>
-                    <option value="income">Receita</option>
-                    <option value="expense">Despesa</option>
-                </select>
-            </div>
-            <div class="form-group">
                 <label for="date" class="form-label">Data</label>
                 <input type="date" id="date" name="date" class="form-input" required>
             </div>
@@ -112,7 +135,7 @@
             <p class="form-helper">As categorias serão filtradas conforme o tipo escolhido.</p>
         </div>
         <div class="form-group">
-            <button type="submit" class="btn btn-primary">Adicionar Transação</button>
+            <button type="submit" class="btn btn-primary" data-transaction-submit>Adicionar Transação</button>
         </div>
     </template>
 
@@ -142,7 +165,15 @@
     <template id="wallet-template">
         <div class="wallet-item" data-wallet>
             <div class="wallet-item-header">
-                <span class="wallet-name" data-wallet-name></span>
+                <div class="wallet-item-main">
+                    <span class="visual-chip" data-wallet-visual>
+                        <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                    </span>
+                    <div class="wallet-item-texts">
+                        <span class="wallet-name" data-wallet-name></span>
+                        <span class="wallet-description" data-wallet-description></span>
+                    </div>
+                </div>
                 <span class="wallet-balance" data-wallet-balance></span>
             </div>
             <div class="wallet-item-footer">
@@ -174,14 +205,36 @@
             <textarea id="wallet-description" name="description" class="form-textarea" rows="3" placeholder="Detalhes opcionais"></textarea>
         </div>
         <div class="form-group">
+            <label class="form-label">Ícone e cor</label>
+            <div class="visual-control" data-visual-control>
+                <span class="visual-chip visual-chip--large" data-visual-preview>
+                    <i class="fa-solid fa-wallet" data-visual-icon aria-hidden="true"></i>
+                </span>
+                <div class="visual-control-actions">
+                    <label class="visual-control-color">
+                        <span>Cor</span>
+                        <input type="color" name="color" value="#22c55e" data-visual-color>
+                    </label>
+                    <button type="button" class="btn btn-outline" data-open-icon-picker>Escolher ícone</button>
+                </div>
+            </div>
+            <input type="hidden" name="icon" value="fa-solid fa-wallet" data-visual-icon-input>
+        </div>
+        <div class="form-group">
             <button type="submit" class="btn btn-primary">Salvar Carteira</button>
         </div>
     </template>
 
     <template id="category-template">
         <div class="category-item" data-category>
-            <span class="category-name" data-category-name></span>
-            <span class="category-type" data-category-type></span>
+            <div class="category-item-main">
+                <span class="visual-chip" data-category-visual>
+                    <i class="fa-solid fa-tag" aria-hidden="true"></i>
+                </span>
+                <div class="category-item-texts">
+                    <span class="category-name" data-category-name></span>
+                </div>
+            </div>
             <div class="transaction-actions">
                 <button class="btn btn-icon btn-edit" data-edit-category title="Editar categoria">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,6 +264,22 @@
             </select>
         </div>
         <div class="form-group">
+            <label class="form-label">Ícone e cor</label>
+            <div class="visual-control" data-visual-control>
+                <span class="visual-chip visual-chip--large" data-visual-preview>
+                    <i class="fa-solid fa-tag" data-visual-icon aria-hidden="true"></i>
+                </span>
+                <div class="visual-control-actions">
+                    <label class="visual-control-color">
+                        <span>Cor</span>
+                        <input type="color" name="color" value="#6366f1" data-visual-color>
+                    </label>
+                    <button type="button" class="btn btn-outline" data-open-icon-picker>Escolher ícone</button>
+                </div>
+            </div>
+            <input type="hidden" name="icon" value="fa-solid fa-tag" data-visual-icon-input>
+        </div>
+        <div class="form-group">
             <button type="submit" class="btn btn-primary">Salvar Categoria</button>
         </div>
     </template>
@@ -218,6 +287,9 @@
     <template id="category-option-template">
         <label class="category-option">
             <input type="checkbox" name="categories" value="" data-category-input>
+            <span class="visual-chip visual-chip--sm" data-category-option-visual>
+                <i class="fa-solid fa-tag" aria-hidden="true"></i>
+            </span>
             <span class="category-option-name" data-category-option-name></span>
             <span class="category-option-type" data-category-option-type></span>
         </label>
@@ -227,6 +299,9 @@
         <article class="goal-item" data-goal>
             <header class="goal-header">
                 <div class="goal-header-main">
+                    <span class="visual-chip" data-goal-visual>
+                        <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+                    </span>
                     <h3 class="goal-name" data-goal-name></h3>
                     <div class="goal-meta">
                         <span class="goal-type" data-goal-type></span>
@@ -285,6 +360,22 @@
                     <input type="number" id="goal-target" name="targetAmount" class="form-input" placeholder="0,00" step="0.01" min="0.01" required>
                 </div>
             </div>
+            <div class="form-group">
+                <label class="form-label">Ícone e cor</label>
+                <div class="visual-control" data-visual-control>
+                    <span class="visual-chip visual-chip--large" data-visual-preview>
+                        <i class="fa-solid fa-bullseye" data-visual-icon aria-hidden="true"></i>
+                    </span>
+                    <div class="visual-control-actions">
+                        <label class="visual-control-color">
+                            <span>Cor</span>
+                            <input type="color" name="color" value="#f97316" data-visual-color>
+                        </label>
+                        <button type="button" class="btn btn-outline" data-open-icon-picker>Escolher ícone</button>
+                    </div>
+                </div>
+                <input type="hidden" name="icon" value="fa-solid fa-bullseye" data-visual-icon-input>
+            </div>
             <div class="form-grid">
                 <div class="form-group">
                     <label for="goal-start-date" class="form-label">Data inicial</label>
@@ -308,6 +399,19 @@
             <div class="empty-state-title">Nenhuma transação encontrada</div>
             <div class="empty-state-description">Use o botão "Nova Transação" para registrar uma nova entrada</div>
         </div>
+    </template>
+
+    <template id="icon-picker-template">
+        <aside class="icon-picker" data-icon-picker>
+            <div class="icon-picker__header">
+                <h3 class="icon-picker__title">Escolha um ícone</h3>
+                <button type="button" class="icon-picker__close" data-icon-picker-close aria-label="Fechar seleção de ícones">×</button>
+            </div>
+            <div class="icon-picker__search">
+                <input type="search" class="icon-picker__search-input" placeholder="Buscar ícone" data-icon-picker-search>
+            </div>
+            <div class="icon-picker__grid" data-icon-picker-grid></div>
+        </aside>
     </template>
 
     <template id="modal-template">

@@ -14,6 +14,8 @@ function validateGoalPayload(payload) {
   const errors = [];
   const name = typeof payload?.name === 'string' ? payload.name.trim() : '';
   const type = typeof payload?.type === 'string' ? payload.type.trim() : '';
+  const icon = typeof payload?.icon === 'string' ? payload.icon.trim() : '';
+  const color = typeof payload?.color === 'string' ? payload.color.trim() : '';
 
   const rawTargetAmount = payload?.targetAmount ?? payload?.target_amount;
   const targetAmount = Number(rawTargetAmount);
@@ -44,6 +46,15 @@ function validateGoalPayload(payload) {
     errors.push('Informe um intervalo de renovação em dias (valor inteiro maior que zero).');
   }
 
+  if (!icon) {
+    errors.push('Selecione um ícone para a meta.');
+  }
+
+  const colorPattern = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+  if (!colorPattern.test(color)) {
+    errors.push('Informe uma cor hexadecimal válida para a meta.');
+  }
+
   return {
     errors,
     parsed: {
@@ -51,7 +62,9 @@ function validateGoalPayload(payload) {
       type,
       targetAmount,
       startDate,
-      intervalDays
+      intervalDays,
+      icon: icon || 'fa-solid fa-bullseye',
+      color: colorPattern.test(color) ? color : '#f97316'
     }
   };
 }

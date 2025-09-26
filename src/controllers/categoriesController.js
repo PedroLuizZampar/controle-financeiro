@@ -4,6 +4,8 @@ function validateCategoryPayload(payload) {
   const errors = [];
   const name = typeof payload?.name === 'string' ? payload.name.trim() : '';
   const type = typeof payload?.type === 'string' ? payload.type.trim() : '';
+  const icon = typeof payload?.icon === 'string' ? payload.icon.trim() : '';
+  const color = typeof payload?.color === 'string' ? payload.color.trim() : '';
 
   if (!name) {
     errors.push('Nome da categoria é obrigatório.');
@@ -13,11 +15,22 @@ function validateCategoryPayload(payload) {
     errors.push('Tipo da categoria deve ser "income" ou "expense".');
   }
 
+  if (!icon) {
+    errors.push('Selecione um ícone para a categoria.');
+  }
+
+  const colorPattern = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+  if (!colorPattern.test(color)) {
+    errors.push('Informe uma cor hexadecimal válida para a categoria.');
+  }
+
   return {
     errors,
     parsed: {
       name,
-      type
+      type,
+      icon: icon || 'fa-solid fa-tag',
+      color: colorPattern.test(color) ? color : '#6366f1'
     }
   };
 }
